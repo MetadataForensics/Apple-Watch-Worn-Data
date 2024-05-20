@@ -1,0 +1,48 @@
+WITH TimeData AS (
+    SELECT
+        datetime(start_date + 978307200, 'UNIXEPOCH') AS "Start Time",
+        datetime(end_date + 978307200, 'UNIXEPOCH') AS "End Time",
+        LAG(datetime(start_date + 978307200, 'UNIXEPOCH')) OVER (ORDER BY start_date) AS "Prev Start Time",
+        LAG(datetime(end_date + 978307200, 'UNIXEPOCH')) OVER (ORDER BY start_date) AS "Prev End Time"
+    FROM samples
+    WHERE data_type = "70"
+),
+PeriodData AS (
+    SELECT
+        *,
+        strftime('%s', "Start Time") - strftime('%s', "Prev End Time") AS "Gap in Seconds",
+        CASE 
+            WHEN strftime('%s', "Start Time") - strftime('%s', "Prev End Time") > 3600 THEN 1 
+            ELSE 0 
+        END AS "New Period"
+    FROM TimeData
+),
+PeriodGroup AS (
+    SELECT
+        *,
+        SUM("New Period") OVER (ORDER BY "Start Time" ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "Period ID"
+    FROM PeriodData
+),
+Summary AS (
+    SELECT
+        "Period ID",
+        MIN("Start Time") AS "Watch Worn Start Time",
+        MAX("End Time") AS "Last Watch Worn Hour Time",
+        (strftime('%s', MAX("End Time")) - strftime('%s', MIN("Start Time"))) / 3600.0 AS "Hours Worn"
+    FROM PeriodGroup
+    GROUP BY "Period ID"
+)
+SELECT 
+    s1."Watch Worn Start Time",
+    CAST(s1."Hours Worn" AS INT),
+    s1."Last Watch Worn Hour Time",
+    CAST(
+        (strftime('%s', s2."Watch Worn Start Time") - 
+         strftime('%s', s1."Last Watch Worn Hour Time")
+        ) / 3600 AS INT
+    ) AS "Hours Off Before Next Worn"
+FROM 
+    Summary s1
+LEFT JOIN
+    Summary s2 ON s1."Period ID" + 1 = s2."Period ID"
+ORDER BY s1."Period ID";
