@@ -5,4 +5,4 @@ Our SQL query for an "at a glance" review of time periods in which the Apple Wat
 This data pertains to the Apple Watch and recorded within the healthdb_secure.sqlite database, available through encrypted Advanced Logical and Full File System Extractions.
 
 # More Details
-Additional information can be found here: https://metadataperspective.com/2024/01/29/siris-memory-lane-exploring-the-siriremembers-database/
+Additional information can be found here: https://metadataperspective.com/2024/05/20/apple-watch-worn-data-analysis/
